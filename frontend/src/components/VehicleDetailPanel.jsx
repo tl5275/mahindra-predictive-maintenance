@@ -67,7 +67,7 @@ function VehicleDetailPanel({ details, loading }) {
         
         <div style={{ marginBottom: "32px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center", textAlign: "center" }}>
           <div style={{ fontSize: "44px", fontWeight: "600", color: "#111", letterSpacing: "-0.5px", lineHeight: 1 }}>
-            {formatNumber(latest.rul)} <span style={{ fontSize: "24px", color: "var(--muted)", fontWeight: "600", letterSpacing: "normal" }}>h</span>
+            {latest.rul} <span style={{ fontSize: "24px", color: "var(--muted)", fontWeight: "600", letterSpacing: "normal" }}>h</span>
           </div>
           <div className="sub-text">
             Remaining Useful Life

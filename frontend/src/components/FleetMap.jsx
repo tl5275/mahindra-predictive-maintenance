@@ -70,7 +70,7 @@ const FleetMarker = memo(function FleetMarker({ vehicle, isSelected, onSelect })
         <strong>{vehicle.vehicle_id}</strong>
         <div>{vehicle.model}</div>
         <div>Health {formatNumber(vehicle.health, 1)}</div>
-        <div>RUL {formatNumber(vehicle.rul)} h</div>
+        <div>RUL {vehicle.rul}h</div>
       </Popup>
     </Marker>
   );

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import os
 from pathlib import Path
+import signal
 import sys
 import time
 from typing import Dict, List, Mapping, Optional, Sequence
@@ -31,6 +33,37 @@ from simulator.vehicle_model import Vehicle
 
 
 settings = get_settings()
+
+
+class ShutdownController:
+    def __init__(self) -> None:
+        self._requested = False
+        self._previous_handlers: Dict[int, object] = {}
+
+    @property
+    def requested(self) -> bool:
+        return self._requested
+
+    def _handle_signal(self, signum: int, _frame: object) -> None:
+        self._requested = True
+        print(f"[SIMULATOR] shutdown_requested signal={signum}")
+
+    def install(self) -> None:
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            self._previous_handlers[signum] = signal.getsignal(signum)
+            signal.signal(signum, self._handle_signal)
+
+    def restore(self) -> None:
+        for signum, handler in self._previous_handlers.items():
+            signal.signal(signum, handler)
+
+
+def _sleep_until(deadline: float, shutdown: ShutdownController) -> None:
+    while not shutdown.requested:
+        remaining = deadline - time.perf_counter()
+        if remaining <= 0:
+            return
+        time.sleep(min(remaining, 0.25))
 
 
 def _weighted_pick(weights: Mapping[str, float], rng: random.Random) -> str:
@@ -147,10 +180,20 @@ class FleetSimulator:
 
 
 class TelemetryApiClient:
-    def __init__(self, *, api_url: str, simulator_id: str) -> None:
+    def __init__(
+        self,
+        *,
+        api_url: str,
+        simulator_id: str,
+        request_timeout_seconds: float = 30.0,
+        max_retries: int = 3,
+        retry_backoff_seconds: float = 2.0,
+    ) -> None:
         self.api_url = api_url.rstrip("/")
         self.simulator_id = simulator_id
-        self.client = httpx.Client(timeout=30.0)
+        self.max_retries = max(1, max_retries)
+        self.retry_backoff_seconds = max(0.5, retry_backoff_seconds)
+        self.client = httpx.Client(timeout=request_timeout_seconds)
 
     def publish_batch(self, records: list[dict[str, object]]) -> dict[str, object]:
         if not records:
@@ -161,14 +204,45 @@ class TelemetryApiClient:
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "records": records,
         }
-        response = self.client.post(f"{self.api_url}/telemetry", json=payload)
-        response.raise_for_status()
-        body = response.json()
-        return {
-            "count": body.get("processed_records", len(records)),
-            "alerts": body.get("alerts", 0),
-            "storage": body.get("storage", "unknown"),
-        }
+        last_error: Optional[Exception] = None
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                response = self.client.post(f"{self.api_url}/telemetry", json=payload)
+                response.raise_for_status()
+                body = response.json()
+                return {
+                    "count": body.get("processed_records", len(records)),
+                    "alerts": body.get("alerts", 0),
+                    "storage": body.get("storage", "unknown"),
+                }
+            except httpx.HTTPStatusError as error:
+                last_error = error
+                status_code = error.response.status_code
+                retryable = status_code >= 500 or status_code == 429
+                if not retryable or attempt >= self.max_retries:
+                    raise
+                wait_seconds = self.retry_backoff_seconds * attempt
+                print(
+                    "[SIMULATOR] "
+                    f"publish_retry attempt={attempt}/{self.max_retries} "
+                    f"status={status_code} retry_in={wait_seconds:.1f}s"
+                )
+                time.sleep(wait_seconds)
+            except (httpx.RequestError, ValueError) as error:
+                last_error = error
+                if attempt >= self.max_retries:
+                    raise
+                wait_seconds = self.retry_backoff_seconds * attempt
+                print(
+                    "[SIMULATOR] "
+                    f"publish_retry attempt={attempt}/{self.max_retries} "
+                    f"error={error} retry_in={wait_seconds:.1f}s"
+                )
+                time.sleep(wait_seconds)
+
+        if last_error is not None:
+            raise last_error
+        raise RuntimeError("Publishing telemetry failed without an error.")
 
     def close(self) -> None:
         self.client.close()
@@ -190,6 +264,9 @@ def run_simulation(
     batch_size: int,
     fleet_size: int,
     simulator_id: str,
+    request_timeout_seconds: float,
+    max_retries: int,
+    retry_backoff_seconds: float,
 ) -> None:
     model_config = load_yaml(DEFAULT_MODEL_CONFIG)
     simulation_config = load_yaml(DEFAULT_SIMULATION_CONFIG)
@@ -200,7 +277,15 @@ def run_simulation(
     simulator = FleetSimulator(model_config=model_config, simulation_config=simulation_config)
     simulator.create_fleet()
     vehicle_ids = list(simulator.vehicles.keys())
-    client = TelemetryApiClient(api_url=api_url, simulator_id=simulator_id)
+    client = TelemetryApiClient(
+        api_url=api_url,
+        simulator_id=simulator_id,
+        request_timeout_seconds=request_timeout_seconds,
+        max_retries=max_retries,
+        retry_backoff_seconds=retry_backoff_seconds,
+    )
+    shutdown = ShutdownController()
+    shutdown.install()
 
     print(
         "[SIMULATOR] "
@@ -215,35 +300,44 @@ def run_simulation(
     next_deadline = time.perf_counter()
 
     try:
-        while steps <= 0 or step < steps:
+        while not shutdown.requested and (steps <= 0 or step < steps):
             step += 1
             batch_vehicle_ids, cursor = _next_vehicle_batch(vehicle_ids, cursor, batch_size)
             telemetry_batch = simulator.step_vehicle_batch(batch_vehicle_ids, dt_seconds=sleep_seconds)
-            result = client.publish_batch(telemetry_batch)
-            print(
-                "[SIMULATOR] "
-                f"step={step} "
-                f"published={len(telemetry_batch)} "
-                f"processed={result.get('count', '?')} "
-                f"alerts={result.get('alerts', 0)} "
-                f"storage={result.get('storage', 'unknown')}"
-            )
+            try:
+                result = client.publish_batch(telemetry_batch)
+                print(
+                    "[SIMULATOR] "
+                    f"step={step} "
+                    f"published={len(telemetry_batch)} "
+                    f"processed={result.get('count', '?')} "
+                    f"alerts={result.get('alerts', 0)} "
+                    f"storage={result.get('storage', 'unknown')}"
+                )
+            except Exception as error:
+                print(
+                    "[SIMULATOR] "
+                    f"publish_failed step={step} "
+                    f"published={len(telemetry_batch)} "
+                    f"error={error}"
+                )
 
             next_deadline += sleep_seconds
-            remaining = next_deadline - time.perf_counter()
-            if remaining > 0:
-                time.sleep(remaining)
-            else:
+            _sleep_until(next_deadline, shutdown)
+            if next_deadline - time.perf_counter() <= 0:
                 next_deadline = time.perf_counter()
     finally:
+        shutdown.restore()
         client.close()
+        print("[SIMULATOR] stopped")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the fleet simulator and post telemetry to FastAPI.")
+    default_api_url = os.getenv("SIMULATOR_API_URL", "https://mahindra-predictive-maintenance-1.onrender.com")
     parser.add_argument(
         "--api-url",
-        default=settings.simulator_api_url,
+        default=default_api_url,
         help="FastAPI base URL that receives telemetry batches.",
     )
     parser.add_argument(
@@ -276,6 +370,24 @@ def main() -> None:
         default=settings.simulator_id,
         help="Logical simulator shard identifier.",
     )
+    parser.add_argument(
+        "--request-timeout",
+        type=float,
+        default=30.0,
+        help="HTTP timeout in seconds for telemetry uploads.",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=3,
+        help="How many times to retry transient upload failures.",
+    )
+    parser.add_argument(
+        "--retry-backoff",
+        type=float,
+        default=2.0,
+        help="Base backoff in seconds between upload retries.",
+    )
     args = parser.parse_args()
     run_simulation(
         api_url=args.api_url,
@@ -284,6 +396,9 @@ def main() -> None:
         batch_size=max(1, args.batch_size),
         fleet_size=max(1, args.fleet_size),
         simulator_id=args.simulator_id,
+        request_timeout_seconds=max(1.0, args.request_timeout),
+        max_retries=max(1, args.max_retries),
+        retry_backoff_seconds=max(0.5, args.retry_backoff),
     )
 
 

@@ -5,6 +5,16 @@ const MAX_METRIC_POINTS = 50;
 const MAX_ALERTS = 100;
 const METRIC_SNAPSHOT_INTERVAL_MS = 2500;
 
+function normalizeVehicleRul(vehicle = {}) {
+  const rawRul = vehicle.rul ?? vehicle.rul_hours ?? vehicle.remaining_useful_life_hours;
+  const normalizedRul = Number(rawRul);
+
+  return {
+    ...vehicle,
+    rul: Number.isFinite(normalizedRul) ? normalizedRul : 0,
+  };
+}
+
 function timestampMs(value) {
   const parsed = Date.parse(value || "");
   return Number.isNaN(parsed) ? 0 : parsed;
@@ -116,9 +126,10 @@ export const useFleetStore = create((set, get) => ({
       ...(() => {
         const nextMap = { ...state.vehiclesById };
         payload.vehicles.forEach((vehicle) => {
+          const normalizedVehicle = normalizeVehicleRul(vehicle);
           nextMap[vehicle.vehicle_id] = {
             ...nextMap[vehicle.vehicle_id],
-            ...vehicle,
+            ...normalizedVehicle,
           };
         });
 
@@ -151,16 +162,18 @@ export const useFleetStore = create((set, get) => ({
       const nextMap = { ...state.vehiclesById };
       payload.vehicles?.forEach((vehicleDelta) => {
         const vehicleId = vehicleDelta.vehicle_id;
+        const nextVehicleFields = normalizeVehicleRul(vehicleDelta.changed_fields || vehicleDelta);
         nextMap[vehicleId] = {
           ...nextMap[vehicleId],
           vehicle_id: vehicleId,
-          ...(vehicleDelta.changed_fields || {}),
+          ...nextVehicleFields,
         };
       });
       const nextOrdered = sortVehicles(nextMap);
       const [trimmedMap, trimmedIds] = trimVehicleMap(nextMap, nextOrdered);
       const visibleIds = state.visibleIds.filter((vehicleId) => trimmedMap[vehicleId]);
       const mergedAlerts = [...(payload.alerts || []), ...state.alerts]
+        .map((alert) => normalizeVehicleRul(alert))
         .filter((alert, index, collection) =>
           collection.findIndex((candidate) => candidate.vehicle_id === alert.vehicle_id) === index
         )
@@ -209,7 +222,14 @@ export const useFleetStore = create((set, get) => ({
   },
 
   setSelectedVehicleDetails(details) {
-    set({ selectedVehicleDetails: details });
+    set({
+      selectedVehicleDetails: details?.latest
+        ? {
+            ...details,
+            latest: normalizeVehicleRul(details.latest),
+          }
+        : details,
+    });
   },
 
   setSystemStatus(systemStatus) {
@@ -221,7 +241,7 @@ export const useFleetStore = create((set, get) => ({
   },
 
   setAlerts(alerts) {
-    set({ alerts: alerts.slice(0, MAX_ALERTS) });
+    set({ alerts: alerts.map((alert) => normalizeVehicleRul(alert)).slice(0, MAX_ALERTS) });
   },
 
   setWsConnected(wsConnected) {

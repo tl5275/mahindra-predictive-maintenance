@@ -38,7 +38,7 @@ const VehicleRow = memo(function VehicleRow({ data, index, style }) {
         <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
           <strong style={{ width: "80px", color: "var(--ink)", fontWeight: "700", letterSpacing: "0.2px" }}>{vehicle.vehicle_id}</strong>
           <span style={{ width: "40px", color: "var(--ink)", fontWeight: "600" }}>{formatNumber(vehicle.health, 0)}%</span>
-          <span style={{ width: "60px", color: "var(--ink)", fontWeight: "600" }}>{formatNumber(vehicle.rul)}h</span>
+          <span style={{ width: "60px", color: "var(--ink)", fontWeight: "600" }}>{vehicle.rul}h</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "500", color: `var(--${vehicle.status === 'warning' ? 'warning' : vehicle.status === 'critical' ? 'critical' : 'success'})` }}>
           <span className={`map-legend__dot map-legend__dot--${vehicle.status || "healthy"}`}></span>

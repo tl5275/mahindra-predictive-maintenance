@@ -36,34 +36,49 @@ function mergeAlerts(currentAlerts = [], nextAlerts = []) {
 }
 
 function mergeSocketPayloads(currentPayload, nextPayload) {
-  if (!currentPayload) {
-    return nextPayload;
-  }
+  const normalizeVehicleUpdate = (vehicleUpdate) => {
+    const { vehicle_id, timestamp, changed_fields, ...rest } = vehicleUpdate;
+    return {
+      vehicle_id,
+      timestamp,
+      changed_fields: changed_fields || rest,
+    };
+  };
 
-  const vehicleMap = new Map((currentPayload.vehicles || []).map((vehicle) => [vehicle.vehicle_id, vehicle]));
+  const basePayload = currentPayload || {
+    type: nextPayload.type || "delta_batch",
+    timestamp: nextPayload.timestamp,
+    fleet_size: nextPayload.fleet_size,
+    lag_ms: Number(nextPayload.lag_ms || 0),
+    alerts: [],
+    vehicles: [],
+  };
+
+  const vehicleMap = new Map((basePayload.vehicles || []).map((vehicle) => [vehicle.vehicle_id, normalizeVehicleUpdate(vehicle)]));
   (nextPayload.vehicles || []).forEach((vehicleUpdate) => {
-    const existing = vehicleMap.get(vehicleUpdate.vehicle_id);
+    const normalizedUpdate = normalizeVehicleUpdate(vehicleUpdate);
+    const existing = vehicleMap.get(normalizedUpdate.vehicle_id);
     if (!existing) {
-      vehicleMap.set(vehicleUpdate.vehicle_id, vehicleUpdate);
+      vehicleMap.set(normalizedUpdate.vehicle_id, normalizedUpdate);
       return;
     }
 
-    vehicleMap.set(vehicleUpdate.vehicle_id, {
-      vehicle_id: vehicleUpdate.vehicle_id,
-      timestamp: vehicleUpdate.timestamp || existing.timestamp,
+    vehicleMap.set(normalizedUpdate.vehicle_id, {
+      vehicle_id: normalizedUpdate.vehicle_id,
+      timestamp: normalizedUpdate.timestamp || existing.timestamp,
       changed_fields: {
         ...(existing.changed_fields || {}),
-        ...(vehicleUpdate.changed_fields || {}),
+        ...(normalizedUpdate.changed_fields || {}),
       },
     });
   });
 
   return {
     type: "delta_batch",
-    timestamp: nextPayload.timestamp || currentPayload.timestamp,
-    fleet_size: nextPayload.fleet_size || currentPayload.fleet_size,
-    lag_ms: Math.max(Number(currentPayload.lag_ms || 0), Number(nextPayload.lag_ms || 0)),
-    alerts: mergeAlerts(currentPayload.alerts, nextPayload.alerts),
+    timestamp: nextPayload.timestamp || basePayload.timestamp,
+    fleet_size: nextPayload.fleet_size || basePayload.fleet_size,
+    lag_ms: Math.max(Number(basePayload.lag_ms || 0), Number(nextPayload.lag_ms || 0)),
+    alerts: mergeAlerts(basePayload.alerts, nextPayload.alerts),
     vehicles: Array.from(vehicleMap.values()),
   };
 }
@@ -310,6 +325,12 @@ export default function App() {
       }
     };
 
+    const fallbackInterval = window.setInterval(() => {
+      if (!disposed) {
+        void refreshFleetSnapshot();
+      }
+    }, 10000);
+
     const socketClient = connectFleetSocket(
       {
         onStateChange: ({ status, retryCount }) => {
@@ -334,6 +355,12 @@ export default function App() {
           if (payload.type === "connected") {
             return;
           }
+          (payload.vehicles || []).forEach((vehicle) => {
+            const rul = vehicle.rul ?? vehicle.changed_fields?.rul;
+            if (rul !== undefined) {
+              console.log("RUL:", rul);
+            }
+          });
           pendingSocketPayloadRef.current = mergeSocketPayloads(pendingSocketPayloadRef.current, payload);
           if (socketFlushTimerRef.current === null) {
             socketFlushTimerRef.current = window.setTimeout(flushSocketPayload, SOCKET_FLUSH_INTERVAL_MS);
@@ -359,6 +386,7 @@ export default function App() {
 
     return () => {
       disposed = true;
+      window.clearInterval(fallbackInterval);
       clearSocketFlush();
       setWsConnected(false);
       socketClient.close();

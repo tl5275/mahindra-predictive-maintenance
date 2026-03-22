@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: mahindra-backend
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+    rootDir: backend
+
+  - type: web
+    name: mahindra-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    rootDir: frontend
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: mahindra-backend
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_WS_URL
+        fromService:
+          type: web
+          name: mahindra-backend
+          envVarKey: RENDER_EXTERNAL_URL
+
+  - type: worker
+    name: mahindra-simulator
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python simulator/fleet_simulator.py --api-url $SIMULATOR_API_URL --sleep 1.0 --fleet-size 1500 --batch-size 150 --max-retries 10
+    rootDir: .
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: SIMULATOR_API_URL
+        value: "https://mahindra-predictive-maintenance-1.onrender.com"

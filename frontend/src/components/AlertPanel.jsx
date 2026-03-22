@@ -38,7 +38,7 @@ function AlertPanel({ alerts = [] }) {
               <div className="sub-text" style={{ display: "flex", alignItems: "center" }}>
                 Health {formatNumber(alert.health, 0)}% 
                 <span style={{ color: "rgba(0,0,0,0.1)", margin: "0 8px" }}>|</span> 
-                RUL {formatNumber(alert.rul)}h
+                RUL {alert.rul}h
               </div>
             </article>
           ))
