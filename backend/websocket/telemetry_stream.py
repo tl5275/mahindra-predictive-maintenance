@@ -10,7 +10,7 @@ from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from backend.core.config import get_settings
+from core.config import get_settings
 
 
 router = APIRouter(tags=["WebSocket"])

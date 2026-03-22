@@ -7,9 +7,9 @@ from typing import Any
 
 import redis
 
-from backend.core.redis_client import get_sync_redis
-from backend.services.memory_state import memory_state_repository
-from backend.services.redis_state import fleet_state_repository
+from core.redis_client import get_sync_redis
+from services.memory_state import memory_state_repository
+from services.redis_state import fleet_state_repository
 
 
 @dataclass(frozen=True)

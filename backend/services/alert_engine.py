@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from backend.core.config import get_settings
+from core.config import get_settings
 
 
 settings = get_settings()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query
 
-from backend.services.state_service import fleet_state_service
+from services.state_service import fleet_state_service
 
 
 router = APIRouter(tags=["Alerts"])

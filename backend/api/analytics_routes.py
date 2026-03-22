@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query
 
-from backend.database.db import state_store
-from backend.services.prediction_service import prediction_service
-from backend.services.twin_service import twin_service
+from services.agent_service import agent_service
+from services.prediction_service import prediction_service
+from services.state_service import fleet_state_service
+from services.twin_service import twin_service
 
 
 router = APIRouter(tags=["Analytics"])
@@ -17,9 +18,10 @@ def get_fleet_health() -> dict:
     """Return fleet health distribution from digital twins."""
 
     summary = twin_service.get_fleet_health()
+    metrics = fleet_state_service.get_metrics()
     return {
         **summary,
-        "timestamp": state_store.last_updated,
+        "timestamp": metrics["last_processed_at"],
     }
 
 
@@ -27,9 +29,10 @@ def get_fleet_health() -> dict:
 def get_fleet_failures() -> dict:
     """Return active failure analytics from swarm agents."""
 
-    agent_summary = state_store.get_agent_summary()
+    agent_summary = agent_service.get_latest()
+    metrics = fleet_state_service.get_metrics()
     return {
-        "updated_at": agent_summary.get("updated_at", state_store.last_updated),
+        "updated_at": agent_summary.get("updated_at", metrics["last_processed_at"]),
         "failure_summary": agent_summary.get("failure_summary", {}),
         "diagnoses_count": len(agent_summary.get("diagnoses", [])),
         "anomalies_count": len(agent_summary.get("anomalies", [])),
@@ -43,9 +46,9 @@ def get_fleet_failures() -> dict:
 def get_fleet_predictions(limit: int = Query(default=50, ge=1, le=2000)) -> dict:
     """Return AI failure predictions for fleet vehicles."""
 
-    telemetry = state_store.get_latest_telemetry()
-    predictions = prediction_service.predict_fleet(telemetry)
+    fleet = fleet_state_service.get_fleet_page(limit=20000, offset=0)
+    predictions = prediction_service.predict_fleet(fleet["vehicles"])
     return {
-        "timestamp": state_store.last_updated,
+        "timestamp": fleet["timestamp"],
         "predictions": predictions[:limit],
     }

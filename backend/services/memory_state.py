@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 from threading import RLock
 from typing import Any
 
-from backend.core.config import get_settings
-from backend.services.fleet_view import alert_sort_key, build_alert_vehicle, normalize_vehicle_record
+from core.config import get_settings
+from services.fleet_view import alert_sort_key, build_alert_vehicle, normalize_vehicle_record
 
 
 settings = get_settings()

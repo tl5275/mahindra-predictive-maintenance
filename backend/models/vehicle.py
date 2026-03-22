@@ -2,7 +2,7 @@
 
 from sqlalchemy import Column, Float, Integer, String
 
-from backend.db.base import Base
+from db.base import Base
 
 
 class Vehicle(Base):

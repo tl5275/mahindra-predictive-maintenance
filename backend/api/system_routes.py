@@ -5,9 +5,9 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from backend.database.db import database_health_details, ping_database
-from backend.services.state_service import fleet_state_service
-from backend.websocket.telemetry_stream import telemetry_broadcaster
+from database.db import database_health_details, ping_database
+from services.state_service import fleet_state_service
+from websocket.telemetry_stream import telemetry_broadcaster
 
 
 router = APIRouter(tags=["System"])

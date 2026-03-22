@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query
 
-from backend.core.config import get_settings
-from backend.services.state_service import fleet_state_service
+from core.config import get_settings
+from services.state_service import fleet_state_service
 
 
 router = APIRouter(tags=["Fleet"])

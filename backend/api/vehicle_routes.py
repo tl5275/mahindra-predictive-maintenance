@@ -7,11 +7,11 @@ from sqlalchemy import desc, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from backend.core.config import get_settings
-from backend.database.db import get_db_session
-from backend.database.models import AlertRecord, MaintenanceLog, TelemetryHistory
-from backend.services.fleet_view import normalize_vehicle_record
-from backend.services.state_service import fleet_state_service
+from core.config import get_settings
+from database.db import get_db_session
+from database.models import AlertRecord, MaintenanceLog, TelemetryHistory
+from services.fleet_view import normalize_vehicle_record
+from services.state_service import fleet_state_service
 
 
 router = APIRouter(prefix="/vehicle", tags=["Vehicle"])

@@ -7,14 +7,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.alerts_routes import router as alerts_router
-from backend.api.fleet_routes import router as fleet_router
-from backend.api.system_routes import router as system_router
-from backend.api.telemetry_routes import router as telemetry_router
-from backend.api.vehicle_routes import router as vehicle_router
-from backend.core.config import get_settings
-from backend.database.db import init_database
-from backend.websocket.telemetry_stream import router as websocket_router, telemetry_broadcaster
+from api.alerts_routes import router as alerts_router
+from api.fleet_routes import router as fleet_router
+from api.system_routes import router as system_router
+from api.telemetry_routes import router as telemetry_router
+from api.vehicle_routes import router as vehicle_router
+from core.config import get_settings
+from database.db import init_database
+from websocket.telemetry_stream import router as websocket_router, telemetry_broadcaster
 
 
 settings = get_settings()

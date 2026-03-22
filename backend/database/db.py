@@ -10,10 +10,10 @@ from typing import Generator
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from backend.core.config import get_settings
-from backend.db.base import Base
-from backend.database import models as _database_models  # noqa: F401
-from backend.models import vehicle as _vehicle_models  # noqa: F401
+from core.config import get_settings
+from db.base import Base
+from database import models as _database_models  # noqa: F401
+from models import vehicle as _vehicle_models  # noqa: F401
 
 
 settings = get_settings()

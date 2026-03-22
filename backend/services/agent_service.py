@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 from typing import Dict, Iterable, Mapping
 
 import yaml
 
-from agents.supervisor_agent import SupervisorAgent
-
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 THRESHOLD_CONFIG_PATH = PROJECT_ROOT / "config" / "thresholds.yaml"
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from agents.supervisor_agent import SupervisorAgent
 
 
 def _load_yaml(path: Path) -> Dict[str, object]:

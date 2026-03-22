@@ -7,7 +7,7 @@ from functools import lru_cache
 import redis
 from redis.asyncio import Redis as AsyncRedis
 
-from backend.core.config import get_settings
+from core.config import get_settings
 
 
 @lru_cache

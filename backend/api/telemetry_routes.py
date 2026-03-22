@@ -6,8 +6,8 @@ from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException
 
-from backend.services.telemetry_pipeline import telemetry_pipeline
-from backend.websocket.telemetry_stream import telemetry_broadcaster
+from services.telemetry_pipeline import telemetry_pipeline
+from websocket.telemetry_stream import telemetry_broadcaster
 
 
 router = APIRouter(tags=["Telemetry"])

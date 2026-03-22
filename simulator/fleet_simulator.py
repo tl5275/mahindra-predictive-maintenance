@@ -14,13 +14,16 @@ import httpx
 import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+BACKEND_ROOT = PROJECT_ROOT / "backend"
 DEFAULT_SIMULATION_CONFIG = PROJECT_ROOT / "config" / "simulation_config.yaml"
 DEFAULT_MODEL_CONFIG = PROJECT_ROOT / "config" / "vehicle_models.yaml"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
-from backend.core.config import get_settings
+from core.config import get_settings
 from simulator.driving_patterns import get_profile, select_next_mode
 from simulator.failure_simulator import FailureSimulator
 from simulator.telemetry_generator import TelemetryGenerator

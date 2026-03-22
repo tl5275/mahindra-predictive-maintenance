@@ -4,16 +4,19 @@ from __future__ import annotations
 
 import copy
 from pathlib import Path
+import sys
 from typing import Dict, List
 
 import yaml
 
-from simulator.fleet_simulator import FleetSimulator
-
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SIMULATION_CONFIG_PATH = PROJECT_ROOT / "config" / "simulation_config.yaml"
 VEHICLE_MODELS_PATH = PROJECT_ROOT / "config" / "vehicle_models.yaml"
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from simulator.fleet_simulator import FleetSimulator
 
 
 def _load_yaml(path: Path) -> Dict[str, object]:

@@ -7,11 +7,11 @@ from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from backend.database.db import session_scope
-from backend.database.models import AlertRecord, MaintenanceLog, TelemetryHistory
-from backend.services.alert_engine import build_maintenance_logs, evaluate_vehicle_alerts
-from backend.services.fleet_view import normalize_vehicle_record
-from backend.services.state_service import StateStoreResult, fleet_state_service
+from database.db import session_scope
+from database.models import AlertRecord, MaintenanceLog, TelemetryHistory
+from services.alert_engine import build_maintenance_logs, evaluate_vehicle_alerts
+from services.fleet_view import normalize_vehicle_record
+from services.state_service import StateStoreResult, fleet_state_service
 
 
 def _utc_now() -> str:
