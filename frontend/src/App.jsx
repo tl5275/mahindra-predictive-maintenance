@@ -15,6 +15,9 @@ const PAGE_SIZE = 200;
 const MAP_MARKER_LIMIT = 200;
 const SOCKET_FLUSH_INTERVAL_MS = 120;
 const CLIENT_METRIC_INTERVAL_MS = 5000;
+const SOCKET_INITIAL_RECONNECT_DELAY_MS = 1000;
+const SOCKET_MAX_RECONNECT_DELAY_MS = 30000;
+const SOCKET_MAX_RECONNECT_ATTEMPTS = 10;
 
 function vehicleListFromState(orderedIds, vehiclesById) {
   return orderedIds.map((vehicleId) => vehiclesById[vehicleId]).filter(Boolean);
@@ -73,6 +76,21 @@ function estimateClientLag(payload) {
   return Math.max(Number(payload?.lag_ms || 0), Date.now() - timestamp);
 }
 
+function socketStatusLabel(status, retryCount) {
+  switch (status) {
+    case "open":
+      return "Live Data";
+    case "reconnecting":
+      return retryCount > 0 ? `Reconnecting (${retryCount})` : "Reconnecting";
+    case "failed":
+      return "Stream Offline";
+    case "closed":
+      return "Disconnected";
+    default:
+      return "Connecting";
+  }
+}
+
 export default function App() {
   const vehiclesById = useFleetStore((state) => state.vehiclesById);
   const orderedIds = useFleetStore((state) => state.orderedIds);
@@ -100,6 +118,7 @@ export default function App() {
   const setStatusFilter = useFleetStore((state) => state.setStatusFilter);
 
   const [pageIndex, setPageIndex] = useState(0);
+  const [socketState, setSocketState] = useState({ status: "connecting", retryCount: 0 });
   const pendingSocketPayloadRef = useRef(null);
   const socketFlushTimerRef = useRef(null);
   const lastClientMetricsAtRef = useRef(0);
@@ -134,6 +153,10 @@ export default function App() {
   const searchNotFound = Boolean(filterText.trim()) && filteredVehicles.length === 0;
   const pageStart = filteredVehicles.length === 0 ? 0 : currentPageIndex * PAGE_SIZE + 1;
   const pageEnd = Math.min((currentPageIndex + 1) * PAGE_SIZE, filteredVehicles.length);
+  const wsStatusLabel = useMemo(
+    () => socketStatusLabel(socketState.status, socketState.retryCount),
+    [socketState.retryCount, socketState.status],
+  );
   const systemHealthy = (systemStatus?.redis || "healthy") === "healthy" &&
     (systemStatus?.postgres || "healthy") === "healthy";
 
@@ -267,17 +290,44 @@ export default function App() {
   }, [selectedVehicleId, setLoadingVehicle, setSelectedVehicleDetails]);
 
   useEffect(() => {
-    let socket;
-    let reconnectTimer;
     let disposed = false;
+    const clearSocketFlush = () => {
+      if (socketFlushTimerRef.current !== null) {
+        window.clearTimeout(socketFlushTimerRef.current);
+        socketFlushTimerRef.current = null;
+      }
+      pendingSocketPayloadRef.current = null;
+    };
 
-    const connect = () => {
-      socket = connectFleetSocket({
-        onOpen: () => setWsConnected(true),
+    const refreshFleetSnapshot = async () => {
+      try {
+        const payload = await getFleet(FLEET_FETCH_LIMIT, 0);
+        if (!disposed) {
+          startTransition(() => hydrateFleet(payload));
+        }
+      } catch (error) {
+        console.error("Failed to refresh fleet snapshot after reconnect", error);
+      }
+    };
+
+    const socketClient = connectFleetSocket(
+      {
+        onStateChange: ({ status, retryCount }) => {
+          if (disposed) {
+            return;
+          }
+          setSocketState({ status, retryCount });
+          setWsConnected(status === "open");
+        },
+        onOpen: ({ wasReconnect }) => {
+          if (disposed || !wasReconnect) {
+            return;
+          }
+          void refreshFleetSnapshot();
+        },
         onClose: () => {
-          setWsConnected(false);
           if (!disposed) {
-            reconnectTimer = window.setTimeout(connect, 2000);
+            clearSocketFlush();
           }
         },
         onMessage: (payload) => {
@@ -289,23 +339,35 @@ export default function App() {
             socketFlushTimerRef.current = window.setTimeout(flushSocketPayload, SOCKET_FLUSH_INTERVAL_MS);
           }
         },
-        onError: () => setWsConnected(false),
-      });
-    };
-
-    connect();
+        onError: (error) => {
+          if (!disposed) {
+            console.error("Fleet WebSocket error", error);
+          }
+        },
+        onReconnectStop: (details) => {
+          if (!disposed) {
+            console.error("Fleet WebSocket retries exhausted", details);
+          }
+        },
+      },
+      {
+        initialReconnectDelayMs: SOCKET_INITIAL_RECONNECT_DELAY_MS,
+        maxReconnectDelayMs: SOCKET_MAX_RECONNECT_DELAY_MS,
+        maxReconnectAttempts: SOCKET_MAX_RECONNECT_ATTEMPTS,
+      },
+    );
 
     return () => {
       disposed = true;
-      window.clearTimeout(reconnectTimer);
-      window.clearTimeout(socketFlushTimerRef.current);
-      socket?.close();
+      clearSocketFlush();
+      setWsConnected(false);
+      socketClient.close();
     };
-  }, [flushSocketPayload, setWsConnected]);
+  }, [flushSocketPayload, hydrateFleet, setWsConnected]);
 
   return (
     <div className="app-shell">
-      <AppHeader systemHealthy={systemHealthy} wsConnected={wsConnected} />
+      <AppHeader systemHealthy={systemHealthy} wsConnected={wsConnected} wsStatusLabel={wsStatusLabel} />
 
       <section className="dashboard-grid">
         {/* Left Column (70%) */}

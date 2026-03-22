@@ -29,7 +29,7 @@ function HeaderBadge({ healthy = true, label }) {
   );
 }
 
-function AppHeader({ wsConnected, systemHealthy }) {
+function AppHeader({ wsConnected, wsStatusLabel = "Live Data", systemHealthy }) {
   return (
     <header className="app-header">
       <div className="app-header__brand">
@@ -41,7 +41,7 @@ function AppHeader({ wsConnected, systemHealthy }) {
       </div>
 
       <div className="app-header__status">
-        <HeaderBadge healthy={wsConnected} label="Live Data" />
+        <HeaderBadge healthy={wsConnected} label={wsStatusLabel} />
         <HeaderBadge healthy={systemHealthy} label="System Healthy" />
       </div>
     </header>

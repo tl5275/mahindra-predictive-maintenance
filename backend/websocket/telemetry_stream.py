@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections import deque
 from datetime import datetime, timezone
+import json
 import time
 from typing import Any, Optional
 
@@ -149,8 +150,23 @@ async def _stream_fleet_updates(websocket: WebSocket) -> None:
 
     try:
         while True:
-            await websocket.receive_text()
+            raw_message = await websocket.receive_text()
+            if not raw_message:
+                continue
+
+            try:
+                payload = json.loads(raw_message)
+            except json.JSONDecodeError:
+                continue
+
+            if not isinstance(payload, dict):
+                continue
+
+            if payload.get("type") == "ping":
+                await websocket.send_json({"type": "pong", "timestamp": _utc_now()})
     except WebSocketDisconnect:
+        pass
+    except Exception:
         pass
     finally:
         await telemetry_broadcaster.unregister(websocket)
