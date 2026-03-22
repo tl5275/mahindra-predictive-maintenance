@@ -37,7 +37,7 @@ class AnomalyAgent:
         for telemetry in telemetry_batch:
             vehicle_id = str(telemetry["vehicle_id"])
             metric_history = self.history[vehicle_id]
-            triggered_metrics: List[Dict[str, float | str]] = []
+            triggered_metrics: List[Dict[str, object]] = []
 
             for metric in metric_history.keys():
                 value = float(telemetry[metric])

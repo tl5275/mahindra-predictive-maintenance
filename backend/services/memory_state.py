@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from threading import RLock
-from typing import Any
+from typing import Any, Optional
 
 from core.config import get_settings
 from services.fleet_view import alert_sort_key, build_alert_vehicle, normalize_vehicle_record
@@ -17,7 +17,7 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _parse_timestamp(value: str | None) -> float:
+def _parse_timestamp(value: Optional[str]) -> float:
     if not value:
         return datetime.now(timezone.utc).timestamp()
     normalized = value.replace("Z", "+00:00")
@@ -27,7 +27,7 @@ def _parse_timestamp(value: str | None) -> float:
         return datetime.now(timezone.utc).timestamp()
 
 
-def _changed_fields(previous: dict[str, Any] | None, current: dict[str, Any]) -> dict[str, Any]:
+def _changed_fields(previous: Optional[dict[str, Any]], current: dict[str, Any]) -> dict[str, Any]:
     if previous is None:
         return {key: value for key, value in current.items() if key != "vehicle_id"}
 
@@ -62,8 +62,8 @@ class InMemoryFleetStateRepository:
         self,
         records: list[dict[str, Any]],
         alerts: list[dict[str, Any]],
-        metadata: dict[str, Any] | None = None,
-    ) -> dict[str, Any] | None:
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> Optional[dict[str, Any]]:
         if not records:
             return None
 
@@ -123,8 +123,8 @@ class InMemoryFleetStateRepository:
         *,
         limit: int,
         offset: int,
-        search: str | None = None,
-        status: str | None = None,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
     ) -> dict[str, Any]:
         normalized_status = (status or "all").strip().lower()
         query = (search or "").strip().lower()
@@ -154,17 +154,17 @@ class InMemoryFleetStateRepository:
                 "vehicles": page,
             }
 
-    def get_vehicle_state(self, vehicle_id: str) -> dict[str, Any] | None:
+    def get_vehicle_state(self, vehicle_id: str) -> Optional[dict[str, Any]]:
         with self._lock:
             vehicle = self._vehicles.get(vehicle_id)
             return None if vehicle is None else dict(vehicle)
 
-    def get_recent_alerts(self, limit: int | None = None) -> list[dict[str, Any]]:
+    def get_recent_alerts(self, limit: Optional[int] = None) -> list[dict[str, Any]]:
         with self._lock:
             desired = limit or settings.recent_alert_limit
             return [dict(alert) for alert in self._recent_alert_events[:desired]]
 
-    def get_alert_vehicles(self, *, limit: int | None = None) -> list[dict[str, Any]]:
+    def get_alert_vehicles(self, *, limit: Optional[int] = None) -> list[dict[str, Any]]:
         desired = limit or settings.recent_alert_limit
         with self._lock:
             alerts = [

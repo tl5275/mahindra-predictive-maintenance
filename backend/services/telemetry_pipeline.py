@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Union
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -18,7 +18,7 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _as_datetime(value: str | datetime) -> datetime:
+def _as_datetime(value: Union[str, datetime]) -> datetime:
     if isinstance(value, datetime):
         return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
     normalized = str(value or _utc_now()).replace("Z", "+00:00")

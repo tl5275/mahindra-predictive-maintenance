@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Dict, Iterable, List, Mapping
+from typing import Dict, Iterable, List, Mapping, Optional
 import random
 
 
@@ -42,7 +42,7 @@ class TelemetryGenerator:
         self,
         vehicle_state: Mapping[str, object],
         failure_effects: Mapping[str, float],
-        timestamp: datetime | None = None,
+        timestamp: Optional[datetime] = None,
     ) -> Dict[str, object]:
         """Create one telemetry event suitable for downstream processing."""
 
@@ -88,7 +88,7 @@ class TelemetryGenerator:
         self,
         vehicle_states: Iterable[Mapping[str, object]],
         effects_by_vehicle: Mapping[str, Mapping[str, float]],
-        timestamp: datetime | None = None,
+        timestamp: Optional[datetime] = None,
     ) -> List[Dict[str, object]]:
         """Create telemetry records for a fleet state snapshot."""
 

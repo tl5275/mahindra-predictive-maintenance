@@ -6,10 +6,11 @@ import argparse
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Optional
 
 
 class SpaHandler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, directory: str | None = None, **kwargs):
+    def __init__(self, *args, directory: Optional[str] = None, **kwargs):
         super().__init__(*args, directory=directory, **kwargs)
 
     def do_GET(self) -> None:

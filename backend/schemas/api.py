@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -12,7 +12,7 @@ class FleetVehicle(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     vehicle_id: str
-    timestamp: datetime | str
+    timestamp: Union[datetime, str]
     model: str
     driving_mode: str
     rpm: float
@@ -34,7 +34,7 @@ class FleetVehicle(BaseModel):
 
 
 class FleetResponse(BaseModel):
-    timestamp: datetime | str | None = None
+    timestamp: Optional[Union[datetime, str]] = None
     fleet_size: int
     limit: int
     offset: int
@@ -47,15 +47,15 @@ class AlertEvent(BaseModel):
     alert_type: str
     severity: str
     message: str
-    created_at: datetime | str
-    anomaly_score: float | None = None
-    rul_hours: int | None = None
-    recommended_action: str | None = None
+    created_at: Union[datetime, str]
+    anomaly_score: Optional[float] = None
+    rul_hours: Optional[int] = None
+    recommended_action: Optional[str] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class VehicleHistoryPoint(BaseModel):
-    timestamp: datetime | str
+    timestamp: Union[datetime, str]
     rpm: float
     engine_temperature: float
     battery_health: float
@@ -79,7 +79,7 @@ class SystemStatusResponse(BaseModel):
     storage: str
     telemetry_endpoint: str
     websocket_channel: str
-    last_processed_at: datetime | str | None = None
+    last_processed_at: Optional[Union[datetime, str]] = None
     fleet_size: int = 0
     total_batches: int = 0
     total_records: int = 0

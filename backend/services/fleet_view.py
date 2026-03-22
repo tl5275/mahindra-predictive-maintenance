@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 
 CRITICAL_ANOMALY_THRESHOLD = 0.7
 WARNING_ANOMALY_THRESHOLD = 0.4
 
 
-def compute_vehicle_status(anomaly_score: float | int | None) -> str:
+def compute_vehicle_status(anomaly_score: Optional[float]) -> str:
     score = float(anomaly_score or 0.0)
     if score > CRITICAL_ANOMALY_THRESHOLD:
         return "critical"
@@ -112,7 +112,7 @@ def normalize_vehicle_record(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def build_alert_vehicle(record: dict[str, Any]) -> dict[str, Any] | None:
+def build_alert_vehicle(record: dict[str, Any]) -> Optional[dict[str, Any]]:
     normalized = normalize_vehicle_record(record)
     if normalized["status"] == "healthy":
         return None

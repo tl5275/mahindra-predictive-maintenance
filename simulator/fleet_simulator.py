@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import sys
 import time
-from typing import Dict, List, Mapping, Sequence
+from typing import Dict, List, Mapping, Optional, Sequence
 import random
 
 import httpx
@@ -53,8 +53,8 @@ class FleetSimulator:
 
     def __init__(
         self,
-        model_config: Mapping[str, object] | None = None,
-        simulation_config: Mapping[str, object] | None = None,
+        model_config: Optional[Mapping[str, object]] = None,
+        simulation_config: Optional[Mapping[str, object]] = None,
     ) -> None:
         if model_config is None:
             model_config = load_yaml(DEFAULT_MODEL_CONFIG)
@@ -141,7 +141,7 @@ class FleetSimulator:
     def get_fleet_state(self) -> List[Dict[str, object]]:
         return [vehicle.to_dict() for vehicle in self.vehicles.values()]
 
-    def get_vehicle_state(self, vehicle_id: str) -> Dict[str, object] | None:
+    def get_vehicle_state(self, vehicle_id: str) -> Optional[Dict[str, object]]:
         vehicle = self.vehicles.get(vehicle_id)
         return None if vehicle is None else vehicle.to_dict()
 

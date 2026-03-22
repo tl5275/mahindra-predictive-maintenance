@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
-from typing import Any
+from typing import Any, Optional
 
 import redis
 
@@ -19,7 +19,7 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _parse_timestamp(value: str | None) -> float:
+def _parse_timestamp(value: Optional[str]) -> float:
     if not value:
         return datetime.now(timezone.utc).timestamp()
     normalized = value.replace("Z", "+00:00")
@@ -29,7 +29,7 @@ def _parse_timestamp(value: str | None) -> float:
         return datetime.now(timezone.utc).timestamp()
 
 
-def _changed_fields(previous: dict[str, Any] | None, current: dict[str, Any]) -> dict[str, Any]:
+def _changed_fields(previous: Optional[dict[str, Any]], current: dict[str, Any]) -> dict[str, Any]:
     if previous is None:
         return {key: value for key, value in current.items() if key != "vehicle_id"}
 
@@ -53,8 +53,8 @@ class FleetStateRepository:
         redis_client: redis.Redis,
         records: list[dict[str, Any]],
         alerts: list[dict[str, Any]],
-        metadata: dict[str, Any] | None = None,
-    ) -> dict[str, Any] | None:
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> Optional[dict[str, Any]]:
         if not records:
             return None
 
@@ -146,8 +146,8 @@ class FleetStateRepository:
         *,
         limit: int,
         offset: int,
-        search: str | None = None,
-        status: str | None = None,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
     ) -> dict[str, Any]:
         normalized_status = (status or "all").strip().lower()
         query = (search or "").strip().lower()
@@ -181,18 +181,18 @@ class FleetStateRepository:
             "vehicles": vehicles,
         }
 
-    def get_vehicle_state(self, redis_client: redis.Redis, vehicle_id: str) -> dict[str, Any] | None:
+    def get_vehicle_state(self, redis_client: redis.Redis, vehicle_id: str) -> Optional[dict[str, Any]]:
         payload = redis_client.get(self.vehicle_key(vehicle_id))
         if not payload:
             return None
         return normalize_vehicle_record(json.loads(payload))
 
-    def get_recent_alerts(self, redis_client: redis.Redis, limit: int | None = None) -> list[dict[str, Any]]:
+    def get_recent_alerts(self, redis_client: redis.Redis, limit: Optional[int] = None) -> list[dict[str, Any]]:
         desired = limit or settings.recent_alert_limit
         payloads = redis_client.lrange(settings.redis_alerts_key, 0, max(0, desired - 1))
         return [json.loads(item) for item in payloads]
 
-    def get_alert_vehicles(self, redis_client: redis.Redis, *, limit: int | None = None) -> list[dict[str, Any]]:
+    def get_alert_vehicles(self, redis_client: redis.Redis, *, limit: Optional[int] = None) -> list[dict[str, Any]]:
         desired = limit or settings.recent_alert_limit
         vehicle_ids = redis_client.zrevrange(settings.redis_fleet_index_key, 0, -1)
         vehicles = self._load_vehicle_states(redis_client, vehicle_ids=vehicle_ids)

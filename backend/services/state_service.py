@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 import redis
 
@@ -14,12 +14,12 @@ from services.redis_state import fleet_state_repository
 
 @dataclass(frozen=True)
 class StateStoreResult:
-    payload: dict[str, Any] | None
+    payload: Optional[dict[str, Any]]
     storage: str
 
 
 class FleetStateService:
-    def _redis_client(self) -> redis.Redis | None:
+    def _redis_client(self) -> Optional[redis.Redis]:
         try:
             client = get_sync_redis()
             client.ping()
@@ -37,7 +37,7 @@ class FleetStateService:
         self,
         records: list[dict[str, Any]],
         alerts: list[dict[str, Any]],
-        metadata: dict[str, Any] | None = None,
+        metadata: Optional[dict[str, Any]] = None,
     ) -> StateStoreResult:
         redis_client = self._redis_client()
         if redis_client is not None:
@@ -60,8 +60,8 @@ class FleetStateService:
         *,
         limit: int,
         offset: int,
-        search: str | None = None,
-        status: str | None = None,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
     ) -> dict[str, Any]:
         redis_client = self._redis_client()
         if redis_client is not None:
@@ -79,19 +79,19 @@ class FleetStateService:
             status=status,
         )
 
-    def get_vehicle_state(self, vehicle_id: str) -> dict[str, Any] | None:
+    def get_vehicle_state(self, vehicle_id: str) -> Optional[dict[str, Any]]:
         redis_client = self._redis_client()
         if redis_client is not None:
             return fleet_state_repository.get_vehicle_state(redis_client, vehicle_id)
         return memory_state_repository.get_vehicle_state(vehicle_id)
 
-    def get_recent_alerts(self, limit: int | None = None) -> list[dict[str, Any]]:
+    def get_recent_alerts(self, limit: Optional[int] = None) -> list[dict[str, Any]]:
         redis_client = self._redis_client()
         if redis_client is not None:
             return fleet_state_repository.get_recent_alerts(redis_client, limit=limit)
         return memory_state_repository.get_recent_alerts(limit=limit)
 
-    def get_alert_vehicles(self, *, limit: int | None = None) -> list[dict[str, Any]]:
+    def get_alert_vehicles(self, *, limit: Optional[int] = None) -> list[dict[str, Any]]:
         redis_client = self._redis_client()
         if redis_client is not None:
             return fleet_state_repository.get_alert_vehicles(redis_client, limit=limit)

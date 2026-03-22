@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from pathlib import Path
 import sys
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import yaml
 
@@ -50,7 +50,7 @@ class TelemetryService:
     def get_fleet_size(self) -> int:
         return len(self.simulator.vehicles)
 
-    def get_vehicle_state(self, vehicle_id: str) -> Dict[str, object] | None:
+    def get_vehicle_state(self, vehicle_id: str) -> Optional[Dict[str, object]]:
         return self.simulator.get_vehicle_state(vehicle_id)
 
     def get_recent_updates(self) -> List[Dict[str, object]]:

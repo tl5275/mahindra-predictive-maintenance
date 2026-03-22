@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from pathlib import Path
 import time
 import traceback
-from typing import Generator
+from typing import Generator, Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
@@ -45,7 +45,7 @@ def wait_for_database(max_attempts: int = 10, delay_seconds: float = 2.0) -> Non
     if IS_SQLITE:
         return
 
-    last_error: Exception | None = None
+    last_error: Optional[Exception] = None
     for _ in range(max_attempts):
         try:
             with engine.connect() as connection:

@@ -53,7 +53,7 @@ class FailureSimulator:
         if not self.active_failures[vehicle_id]:
             del self.active_failures[vehicle_id]
 
-    def _effective_rate(self, failure_name: str, vehicle_state: Mapping[str, float | str]) -> float:
+    def _effective_rate(self, failure_name: str, vehicle_state: Mapping[str, object]) -> float:
         rate = self.failure_rates[failure_name]
         if failure_name == "overheating":
             if float(vehicle_state["engine_temperature"]) > 104:
@@ -71,7 +71,7 @@ class FailureSimulator:
                 rate *= 1.6
         return rate
 
-    def step_vehicle(self, vehicle_state: Mapping[str, float | str]) -> Dict[str, object]:
+    def step_vehicle(self, vehicle_state: Mapping[str, object]) -> Dict[str, object]:
         """Update failure states and return active failures plus aggregate effects."""
 
         vehicle_id = str(vehicle_state["vehicle_id"])

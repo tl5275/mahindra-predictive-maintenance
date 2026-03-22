@@ -104,7 +104,7 @@ class Vehicle:
         self.latitude = _clamp(self.latitude + delta_lat, 8.0, 37.0)
         self.longitude = _clamp(self.longitude + delta_lon, 68.0, 97.0)
 
-    def to_dict(self) -> Dict[str, float | str | List[str]]:
+    def to_dict(self) -> Dict[str, object]:
         """Return a serializable view used by telemetry and APIs."""
 
         return {

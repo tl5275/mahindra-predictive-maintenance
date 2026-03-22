@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import deque
 from datetime import datetime, timezone
-from typing import Deque, Dict, Iterable, List, Mapping
+from typing import Deque, Dict, Iterable, List, Mapping, Optional
 
 from digital_twin.battery_twin import BatteryTwin
 from digital_twin.brake_twin import BrakeTwin
@@ -54,7 +54,7 @@ class TwinEngine:
             self.update_vehicle(telemetry)
         return self.vehicle_twins
 
-    def get_vehicle_twin(self, vehicle_id: str) -> Dict[str, object] | None:
+    def get_vehicle_twin(self, vehicle_id: str) -> Optional[Dict[str, object]]:
         return self.vehicle_twins.get(vehicle_id)
 
     def fleet_health_summary(self) -> Dict[str, object]:

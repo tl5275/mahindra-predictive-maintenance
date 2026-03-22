@@ -6,7 +6,7 @@ import asyncio
 from collections import deque
 from datetime import datetime, timezone
 import time
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -21,7 +21,7 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _timestamp_ms(value: str | None) -> float:
+def _timestamp_ms(value: Optional[str]) -> float:
     if not value:
         return time.time() * 1000
     normalized = value.replace("Z", "+00:00")
@@ -36,14 +36,14 @@ class TelemetryBroadcaster:
         self._connections: set[WebSocket] = set()
         self._connections_lock = asyncio.Lock()
         self._rate_window: deque[tuple[float, int, int]] = deque()
-        self._stats: dict[str, float | int | str | None] = {
+        self._stats: dict[str, Any] = {
             "messages_sent": 0,
             "dropped_updates": 0,
             "last_batch_size": 0,
             "last_lag_ms": 0.0,
             "last_broadcast_at": None,
         }
-        self._client_metrics: dict[str, float | str | None] = {
+        self._client_metrics: dict[str, Any] = {
             "render_time": 0.0,
             "lag_ms": 0.0,
             "updated_at": None,

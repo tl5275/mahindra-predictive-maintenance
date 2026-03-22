@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
-from typing import Dict, Iterable, Mapping
+from typing import Dict, Iterable, Mapping, Optional
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -23,7 +23,7 @@ class TwinService:
     def update(self, telemetry_batch: Iterable[Mapping[str, object]]) -> Dict[str, Dict[str, object]]:
         return self.engine.update_fleet(telemetry_batch)
 
-    def get_vehicle_twin(self, vehicle_id: str) -> Dict[str, object] | None:
+    def get_vehicle_twin(self, vehicle_id: str) -> Optional[Dict[str, object]]:
         return self.engine.get_vehicle_twin(vehicle_id)
 
     def get_fleet_health(self) -> Dict[str, object]:
