@@ -1,0 +1,17 @@
+venv
+__pycache__
+**/__pycache__
+frontend/node_modules
+frontend/dist
+frontend/build
+test-results
+*.log
+.git
+agents
+data
+digital_twin
+docs
+frontend/build
+frontend/dist
+ml_models
+scripts

@@ -1,0 +1,23 @@
+simulation:
+  fleet_size: 1200
+  telemetry_interval_seconds: 1
+  random_seed: 42
+  history_limit: 5000
+  default_mode: city
+  model_mix:
+    XUV700: 0.3
+    Scorpio-N: 0.25
+    Thar: 0.2
+    Bolero: 0.25
+
+failure_injection:
+  overheating_rate: 0.0008
+  brake_failure_rate: 0.0007
+  battery_degradation_rate: 0.0006
+  sensor_malfunction_rate: 0.0004
+
+api:
+  host: 0.0.0.0
+  port: 8000
+  cors_origins:
+    - "*"

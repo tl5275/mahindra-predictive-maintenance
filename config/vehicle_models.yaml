@@ -1,0 +1,33 @@
+models:
+  XUV700:
+    rpm_idle: 820
+    rpm_redline: 6200
+    engine_temp_nominal: 92
+    oil_pressure_nominal: 56
+    brake_wear_rate: 0.018
+    battery_capacity_kwh: 2.4
+    fuel_efficiency_kmpl: 14.8
+  Scorpio-N:
+    rpm_idle: 790
+    rpm_redline: 6000
+    engine_temp_nominal: 95
+    oil_pressure_nominal: 58
+    brake_wear_rate: 0.021
+    battery_capacity_kwh: 2.2
+    fuel_efficiency_kmpl: 13.7
+  Thar:
+    rpm_idle: 840
+    rpm_redline: 5800
+    engine_temp_nominal: 97
+    oil_pressure_nominal: 60
+    brake_wear_rate: 0.024
+    battery_capacity_kwh: 2.1
+    fuel_efficiency_kmpl: 12.4
+  Bolero:
+    rpm_idle: 760
+    rpm_redline: 5400
+    engine_temp_nominal: 94
+    oil_pressure_nominal: 54
+    brake_wear_rate: 0.017
+    battery_capacity_kwh: 2.0
+    fuel_efficiency_kmpl: 16.1

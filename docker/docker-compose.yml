@@ -1,0 +1,65 @@
+services:
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend.Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: sqlite:///data/mahindra_local.db
+      CORS_ORIGINS: http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:8080
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  simulator:
+    build:
+      context: ..
+      dockerfile: docker/simulator.Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      SIMULATOR_API_URL: http://backend:8000
+      FLEET_SIZE: 10000
+      SIMULATOR_BATCH_SIZE: 100
+      SIMULATOR_INTERVAL_MS: 200
+      SIMULATOR_ID: simulator-1
+      PYTHONUNBUFFERED: "1"
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend.Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+
+volumes:
+  redis_data:

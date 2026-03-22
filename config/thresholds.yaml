@@ -1,0 +1,18 @@
+health_thresholds:
+  healthy: 80
+  warning: 60
+  critical: 40
+
+telemetry_thresholds:
+  engine_temperature_high: 112
+  engine_temperature_warning: 103
+  oil_pressure_low: 35
+  brake_wear_high: 75
+  brake_wear_critical: 88
+  battery_health_low: 55
+  battery_health_critical: 35
+  rpm_high: 4800
+
+anomaly_detection:
+  window_size: 30
+  z_score_threshold: 2.8
