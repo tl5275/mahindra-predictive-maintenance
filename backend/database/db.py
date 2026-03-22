@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from pathlib import Path
 import time
+import traceback
 from typing import Generator
 
 from sqlalchemy import create_engine, text
@@ -59,8 +60,14 @@ def wait_for_database(max_attempts: int = 10, delay_seconds: float = 2.0) -> Non
 
 
 def init_database() -> None:
-    wait_for_database()
-    Base.metadata.create_all(bind=engine)
+    try:
+        wait_for_database()
+        Base.metadata.create_all(bind=engine)
+        print("DB initialized")
+    except Exception:
+        print("DB ERROR:")
+        traceback.print_exc()
+        raise
 
 
 def get_db_session() -> Generator[Session, None, None]:
