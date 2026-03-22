@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import JSON, Boolean, DateTime, Float, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -18,8 +18,8 @@ class VehicleMetadata(Base):
     vehicle_id: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     model: Mapped[str] = mapped_column(String(64))
     simulator_id: Mapped[str] = mapped_column(String(64), default="simulator-1")
-    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
-    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -70,9 +70,9 @@ class AlertRecord(Base):
     alert_type: Mapped[str] = mapped_column(String(32))
     severity: Mapped[str] = mapped_column(String(16))
     message: Mapped[str] = mapped_column(Text)
-    anomaly_score: Mapped[float | None] = mapped_column(Float, nullable=True)
-    rul_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    recommended_action: Mapped[str | None] = mapped_column(Text, nullable=True)
+    anomaly_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    rul_hours: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    recommended_action: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -84,12 +84,12 @@ class MaintenanceLog(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    external_id: Mapped[str | None] = mapped_column(String(128), unique=True, index=True, nullable=True)
+    external_id: Mapped[Optional[str]] = mapped_column(String(128), unique=True, index=True, nullable=True)
     vehicle_id: Mapped[str] = mapped_column(String(32), index=True)
     event_type: Mapped[str] = mapped_column(String(32))
     priority: Mapped[str] = mapped_column(String(16))
     description: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(16), default="open")
-    scheduled_within_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    scheduled_within_hours: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

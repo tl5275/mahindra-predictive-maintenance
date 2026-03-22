@@ -1,6 +1,7 @@
 """Simple vehicle summary model for backend bootstrapping and health checks."""
 
-from sqlalchemy import Column, Float, Integer, String
+from sqlalchemy import Float, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from db.base import Base
 
@@ -8,10 +9,10 @@ from db.base import Base
 class Vehicle(Base):
     __tablename__ = "vehicles"
 
-    id = Column(String, primary_key=True)
-    health = Column(Float)
-    temperature = Column(Float)
-    rpm = Column(Integer)
-    battery = Column(Float)
-    anomaly_score = Column(Float)
-    rul_hours = Column(Float)
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    health: Mapped[float] = mapped_column(Float)
+    temperature: Mapped[float] = mapped_column(Float)
+    rpm: Mapped[int] = mapped_column(Integer)
+    battery: Mapped[float] = mapped_column(Float)
+    anomaly_score: Mapped[float] = mapped_column(Float)
+    rul_hours: Mapped[float] = mapped_column(Float)
